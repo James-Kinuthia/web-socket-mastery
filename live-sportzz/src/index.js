@@ -9,6 +9,6 @@ app.get('/', (_req, res) => {
     res.send("Hello from express js");
 });
 
-app.get(PORT, () => {
+app.listen(PORT, () => {
     console.log(`Hello from port http://localhost:${PORT}`);
 });

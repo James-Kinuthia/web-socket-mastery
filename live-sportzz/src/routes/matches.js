@@ -1,11 +1,12 @@
 import { Router } from 'express'
-import { createMatchSchema, listMatchesQuerySchema } from '../validations/matches';
-import { matches } from '../db/schema';
-import { db } from '../db/db';
-import { getMatchStatus } from '../utils/match-status';
+import { createMatchSchema, listMatchesQuerySchema } from '../validations/matches.js';
+import { matches } from '../db/schema.js';
+import { db } from '../db/db.js';
+import { getMatchStatus } from '../utils/match-status.js';
 import { desc } from 'drizzle-orm';
 
 export const matchRouter = Router();
+
 const MAX_LIMIT = 100;
 
 matchRouter.get('/', async (req, res) => {
@@ -39,6 +40,10 @@ matchRouter.post('/', async (req, res) => {
             awayScore: awayScore ?? 0,
             status: getMatchStatus(startTime, endTime),
         }).returning();
+
+        if(res.app.locals.broadcastMatchCreated){
+            res.app.locals.broadcastMatchCreated(event);
+        }
 
         res.status(201).json({ data: event });
     } catch (error) {

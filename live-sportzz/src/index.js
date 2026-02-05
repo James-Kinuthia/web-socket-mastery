@@ -19,7 +19,7 @@ app.get('/', (_req, res) => {
     res.send("Hello from express js");
 });
 
-app.use(securityMiddleware);
+app.use(securityMiddleware());
 
 app.use("/matches", matchRouter );
 

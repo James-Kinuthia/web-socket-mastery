@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from 'ws'
-import { wsArcJet } from '../arcjet';
+import { wsArcJet } from '../arcjet.js';
 
 function sendJson(socket, payload) {
     if (socket.readyState !== WebSocket.OPEN) return;
@@ -21,28 +21,44 @@ function broadcast(wss, payload) {
 
 export function attachWebSocketServer(server) {
     const wss = new WebSocketServer({
-        server,
-        path: '/ws',
+        noServer: true,
         maxPayload: 1024 * 1024,
     })
 
-    wss.on('connection', async (socket) => {
-        if(wsArcJet){
+    // Handle HTTP upgrade - this is where req is available
+    server.on('upgrade', async (req, socket, head) => {
+        // Only handle /ws path
+        if (req.url !== '/ws') {
+            socket.destroy();
+            return;
+        }
+
+        // Apply ArcJet protection during upgrade
+        if (wsArcJet) {
             try {
                 const decision = await wsArcJet.protect(req);
-                if(decision.isDenied()){
-                  const code  = decision.reason.isRateLimit() ? 1013 : 1008;
-                  const reason = decision.reason.isRateLimit() ? "Rate limit exceeded" : "Access denied";
-
-                  socket.close(code, reason);
-                  return;
+                if (decision.isDenied()) {
+                    const reason = decision.reason.isRateLimit() ? "Rate limit exceeded" : "Access denied";
+                    socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+                    socket.destroy();
+                    console.log(`WebSocket connection denied: ${reason}`);
+                    return;
                 }
-
             } catch (error) {
-                console.log("Ws connection error");
-                socket.close(1011, "Server security error");
+                console.error("WebSocket security error:", error);
+                socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+                socket.destroy();
+                return;
             }
         }
+
+        // Upgrade the connection
+        wss.handleUpgrade(req, socket, head, (ws) => {
+            wss.emit('connection', ws, req);
+        });
+    });
+
+    wss.on('connection', (socket, req) => {
         socket.isAlive = true;
         socket.on('pong', () => {
             socket.isAlive = true;
@@ -53,7 +69,7 @@ export function attachWebSocketServer(server) {
 
     const interval = setInterval(() => {
         wss.clients.forEach((ws) => {
-            if(ws.isAlive === false) return ws.terminate();
+            if (ws.isAlive === false) return ws.terminate();
             ws.isAlive = false;
             ws.ping();
         });

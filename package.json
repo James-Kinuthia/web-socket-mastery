@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@arcjet/inspect": "^1.0.0",
+    "@arcjet/node": "^1.0.0"
+  }
+}

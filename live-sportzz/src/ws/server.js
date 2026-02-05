@@ -1,6 +1,11 @@
 import { WebSocket, WebSocketServer } from 'ws'
 import { wsArcJet } from '../arcjet';
 
+/**
+ * Send a JSON-serializable payload over an open WebSocket.
+ * Does nothing if the socket is not in the OPEN state.
+ * @param {WebSocket} socket - The WebSocket to send the payload on.
+ * @param {*} payload - The value to JSON.stringify and transmit.
 function sendJson(socket, payload) {
     if (socket.readyState !== WebSocket.OPEN) return;
 
@@ -19,6 +24,19 @@ function broadcast(wss, payload) {
 }
 
 
+/**
+ * Attach a WebSocketServer to the given HTTP server at path "/ws" and manage connections.
+ *
+ * Sets up an endpoint that enforces an optional wsArcJet protection check on new connections
+ * (closing denied connections with code 1013 for rate limits or 1008 for access denied, and
+ * 1011 on protection errors), marks sockets as alive, responds to pongs, sends a welcome
+ * message on connect, logs socket errors, and maintains a heartbeat that pings clients every
+ * 30 seconds and terminates unresponsive ones.
+ *
+ * @param {import('http').Server} server - HTTP server to attach the WebSocketServer to.
+ * @returns {{ broadcastMatchCreated: (match: any) => void }} An object exposing `broadcastMatchCreated`,
+ *          a function that broadcasts a `{ type: 'match_created', data: match }` message to all connected clients.
+ */
 export function attachWebSocketServer(server) {
     const wss = new WebSocketServer({
         server,

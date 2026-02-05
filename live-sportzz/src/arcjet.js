@@ -23,6 +23,17 @@ rules: [
 ]
 }): null;
 
+/**
+ * Create an Express middleware that applies ArcJet protection to incoming requests.
+ *
+ * The middleware delegates to the configured HTTP ArcJet client (if present) to decide whether
+ * to block a request. If no ArcJet client is configured it immediately calls `next()`. When a
+ * decision indicates the request should not be denied it responds with `429` for rate limits or
+ * `403` for other denials. If ArcJet throws an error it responds with `503`. If the decision
+ * denies the request, the middleware calls `next()` to continue the request chain.
+ *
+ * @returns {Function} An Express middleware function `(req, res, next)` that enforces ArcJet protection.
+ */
 export function securityMiddleware(){
     return async(req, res, next) =>{
         if(!httpArcJet) return next();

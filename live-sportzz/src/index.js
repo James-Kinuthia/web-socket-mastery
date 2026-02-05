@@ -5,7 +5,8 @@ import { attachWebSocketServer } from './ws/server.js';
 
 
 
-const PORT = Number(process.env.PORT || 8000);
+const parsedPort = Number.parseInt(process.env.PORT ?? "", 10);
+const PORT = Number.isFinite(parsedPort) ? parsedPort : 8000;
 const HOST = process.env.HOST || '0.0.0.0';
 const app = express();
 

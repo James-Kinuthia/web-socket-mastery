@@ -1,6 +1,6 @@
 import { WebSocket, WebSocketServer } from 'ws'
 
-function sendJsom(socket, payload) {
+function sendJson(socket, payload) {
     if (socket.readyState !== WebSocket.OPEN) return;
 
     socket.send(JSON.stringify(payload));
@@ -22,7 +22,7 @@ export function attachWebSocketServer(server) {
     })
 
     wss.on('connection', (socket) => {
-        sendJsom(socket, { type: "Welcome" });
+        sendJson(socket, { type: "Welcome" });
         socket.on("error", console.error);
     });
 
